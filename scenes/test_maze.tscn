@@ -1,0 +1,22 @@
+[gd_scene load_steps=5 format=3 uid="uid://bsnng08uif603"]
+
+[ext_resource type="Script" uid="uid://ul6fdksqlljn" path="res://scripts/testmaze.gd" id="1_yw7y4"]
+[ext_resource type="Texture2D" uid="uid://dy2u7m6hino6i" path="res://arts/wall-cells.png" id="2_vlu30"]
+
+[sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_vlu30"]
+texture = ExtResource("2_vlu30")
+0:0/0 = 0
+1:0/0 = 0
+0:1/0 = 0
+1:1/0 = 0
+
+[sub_resource type="TileSet" id="TileSet_yw7y4"]
+sources/1 = SubResource("TileSetAtlasSource_vlu30")
+
+[node name="testMaze" type="Node2D"]
+script = ExtResource("1_yw7y4")
+
+[node name="TML-wall" type="TileMapLayer" parent="."]
+tile_set = SubResource("TileSet_yw7y4")
+
+[node name="TML-block" type="TileMapLayer" parent="."]

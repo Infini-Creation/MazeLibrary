@@ -16,31 +16,53 @@ enum Direction  { North = 0x1, West = 0x2, South = 0x4, East = 0x8 }
 
 var maze : Array
 var generated : bool = false
+var error : bool = false
+
 var origin : Vector2i = Vector2i(-1, -1)
 var cyclePick : int = -1
 var kittCycle : bool = true # true = increase, false = decrease
 var visited_cells : Array[Vector2i] = []
 
 
+var interactiveMazeData : Dictionary = {
+	"started" : false,
+	"cells" : [], #Array[Vector2i]
+	"cellPicked" : Vector2i.ZERO,
+	"index" : 0, #int
+	"direction" : [], #Array
+	"move" : Vector2i.ZERO,
+	"position" : Vector2i.ZERO,
+	"for-directions" : null,
+	"for-idx" : 8,
+	"previousCell" : Vector2i.ZERO,
+	"currentCell" : Vector2i.ZERO
+}
+
+
 @export var width : int
 @export var height : int
 @export var pickMethod : int
 @export var debugEnabled : bool = false
+var debugNoRandom : bool = false
 
 
 func buildBazeMaze(_width : int, _height : int, _pickmethod : int = PickMethod.Newest) -> void:
 	
-	width = _width
-	height = _height
-	pickMethod = _pickmethod
+	if _width > 0 and _height > 0:
+		width = _width
+		height = _height
+		pickMethod = _pickmethod
 
-	maze.resize(_width)
-	for idx in range(0, _width):
-		maze[idx] = []
-		maze[idx].resize(_height)
-		maze[idx].fill(0)
+		maze.resize(_width)
+		for idx in range(0, _width):
+			maze[idx] = []
+			maze[idx].resize(_height)
+			maze[idx].fill(0)
 
-	debug("maze="+str(maze))
+		debug("maze="+str(maze))
+	else:
+		print("Invalid width and/or height value(s) : w=["+str(width)+"] h=["+str(height)+"]")
+		error = true
 
 
 func GenerateTWMaze_GrowingTree(pmethod : int = PickMethod.Newest) -> void:
@@ -52,8 +74,14 @@ func GenerateTWMaze_GrowingTree(pmethod : int = PickMethod.Newest) -> void:
 	var move : Vector2i
 	var position : Vector2i
 
-	origin = Vector2i(randi_range(0, width-1), randi_range(0, height-1))
+	if debugNoRandom == false:
+		origin = Vector2i(randi_range(0, width-1), randi_range(0, height-1))
+	else:
+		origin = Vector2i(1, 1)
+
 	cells.append(origin)
+
+	visited_cells.clear()
 	visited_cells.append(origin)
 
 	#~store cells picked, path taken
@@ -111,6 +139,82 @@ func GenerateTWMaze_GrowingTree(pmethod : int = PickMethod.Newest) -> void:
 	print("maze="+str(maze))
 
 
+func GenerateTWMaze_GrowingTree_interactive(step : bool = false, pmethod : int = PickMethod.Newest) -> bool:
+	var completed : bool = false
+
+	if interactiveMazeData["started"] == false:
+		debug("imaze: init")
+		if debugNoRandom == false:
+			origin = Vector2i(randi_range(0, width-1), randi_range(0, height-1))
+		else:
+			origin = Vector2i(1, 1)
+
+		interactiveMazeData["cells"].append(origin)
+		interactiveMazeData["started"] = true
+	
+	if step == true:
+		debug("imaze: begin")
+		#while (interactiveMazeData["cells"].size() > 0):
+		if interactiveMazeData["cells"].size() > 0:
+			debug("imaze: cells not empty ="+str(interactiveMazeData["cells"]))
+			interactiveMazeData["index"] = chooseIndex(interactiveMazeData["cells"].size(), pmethod)
+			interactiveMazeData["cellPicked"] = interactiveMazeData["cells"][interactiveMazeData["index"]]
+			interactiveMazeData["direction"] = RandomizeDirection() ##not used
+			debug("imaze: idx="+str(interactiveMazeData["index"])+" dir="+str(interactiveMazeData["direction"]))
+			debug("imaze: cell picked="+str(interactiveMazeData["cellPicked"]))
+			interactiveMazeData["previousCell"] = interactiveMazeData["cellPicked"]
+			#after each for loop completed, update for loop var with this call
+
+			# for loop to modify
+			# dir todo, dir done, maybe move from one array to another till it's empty then cycle
+			debug("imaze: fidx="+str(interactiveMazeData["for-idx"]))
+			if interactiveMazeData["for-idx"] >= Direction.size():
+				debug("imaze: reset dir")
+				interactiveMazeData["for-directions"] = RandomizeDirection()
+				interactiveMazeData["for-idx"] = 0
+			
+			#for dir : int in interactiveMazeData["direction"]:
+			if interactiveMazeData["for-idx"] < Direction.size():
+				var dir = interactiveMazeData["for-directions"][interactiveMazeData["for-idx"]]
+				debug("imaze: fidx="+str(interactiveMazeData["for-idx"])+"  dir="+str(dir))
+				interactiveMazeData["move"] = DoAStep(dir)
+				debug("imaze: move="+str(interactiveMazeData["move"]))
+				interactiveMazeData["position"] = interactiveMazeData["cellPicked"] + interactiveMazeData["move"]
+				debug("imaze: pos="+str(interactiveMazeData["position"]))
+				interactiveMazeData["for-idx"] += 1
+			
+				if interactiveMazeData["position"].x >= 0 and interactiveMazeData["position"].y >= 0 and interactiveMazeData["position"].x < width and interactiveMazeData["position"].y < height:
+					debug("imaze: pos is inside the maze")
+					if maze[interactiveMazeData["position"].x][interactiveMazeData["position"].y] == 0:
+						debug("imaze: found an unvisited cell")
+						interactiveMazeData["currentCell"] = interactiveMazeData["position"]
+						maze[interactiveMazeData["cellPicked"].x][interactiveMazeData["cellPicked"].y] |= dir
+						maze[interactiveMazeData["position"].x][interactiveMazeData["position"].y] |= OppositeDirection(dir)
+						# unvisited cell/new cell
+						interactiveMazeData["cells"].append(interactiveMazeData["position"])
+						debug("imaze: set index to -1")
+						interactiveMazeData["index"] = -1
+						
+						## break dir for loop
+						interactiveMazeData["for-idx"] = 8
+						debug("imaze:reset for loop idx")
+				
+				 #here only do that if loop has been broke OR f-idx > 3 !!!
+			if interactiveMazeData["for-idx"] >= Direction.size():
+				debug("imaze: end for loop, check cell index >= 0")
+				if interactiveMazeData["index"] >= 0:
+					debug("imaze: del cell at idx="+str(interactiveMazeData["index"]))
+					interactiveMazeData["cells"].remove_at(interactiveMazeData["index"])
+		
+		else:
+			debug("imaze: cells is empty")
+			completed = true
+
+		debug("imaze: end")
+
+	return completed
+
+
 func chooseIndex(maxIdx : int, pickmethod : int) -> int:
 	var index : int = 0
 	
@@ -149,7 +253,9 @@ func chooseIndex(maxIdx : int, pickmethod : int) -> int:
 
 func RandomizeDirection() -> Array:
 	var tmp : Array = Direction.values()
-	tmp.shuffle()
+	
+	if debugNoRandom == false:
+		tmp.shuffle()
 	
 	debug("rd: temp dir array="+str(tmp))
 	return tmp
@@ -197,9 +303,9 @@ func OppositeDirection(dir : int) -> int:
 func dumpMaze() -> void:
 	var mazeLine : String = ""
 
-	for x in range(0, width):
-		printraw("M["+str(x)+"]=")
-		for y in range(0, height):
+	for y in range(0, height):
+		printraw("M["+str(y)+"]=")
+		for x in range(0, width):
 			#print(" "+ str(maze[x][y]) +" ")
 			mazeLine += " "+str(maze[x][y])
 			
@@ -207,11 +313,13 @@ func dumpMaze() -> void:
 		mazeLine = ""
 
 
+ # could use bitmap class instead
+# ~block maze class on its own with blocksize as param
 func lineToBlock() -> Array:
 	var blockMaze : Array = []
 	
 	if maze == null or width <= 1 or height <= 1:
-		print("Invalid maze data !")
+		print("Error: Invalid maze data !")
 
 	blockMaze.resize(2 * width + 1)
 	
@@ -238,7 +346,7 @@ func lineToBlock() -> Array:
 
 			blockMaze[2 * widx + 2][2 * hidx + 2] = 1
 
-	#print("BM="+str(blockMaze))
+	print("BlockMaze=")
 	var mazeLine : String = ""
 	for x in range(0, 2 * width + 1):
 		printraw("BM["+str(x)+"]=")
@@ -249,6 +357,39 @@ func lineToBlock() -> Array:
 		mazeLine = ""
 		
 	return blockMaze
+
+
+func scaleBlockMaze(blockMaze : Array, scale : int = 1) -> Array:
+	var scaledMaze : Array = []
+	
+	if maze == null or blockMaze == null or blockMaze.size() <= 1 or blockMaze[0].size() <= 1:
+		print("Error: Invalid maze data !")
+	else:
+		scaledMaze = []
+		#Byte[,] biggerMaze = new Byte[blockmaze.GetLength(0) * Scale, blockmaze.GetLength(1) * Scale];
+		scaledMaze.resize(blockMaze.size() * scale)
+		for idx in range (0, scaledMaze.size()):
+			scaledMaze[idx] = []
+			scaledMaze[idx].resize(blockMaze[0].size() * scale)
+		
+		for x in range (0, blockMaze.size()):
+			for y in range (0, blockMaze[0].size()):
+				for sx in range(0, scale):
+					for sy in range(0, scale):
+						scaledMaze[x * scale + sx][y * scale + sy] = blockMaze[x][y]
+			
+			
+	print("Scaled Maze=")
+	var mazeLine : String = ""
+	for x in range(0, scaledMaze.size()):
+		printraw("BM["+str(x)+"]=")
+		for y in range(0, scaledMaze[x].size()):
+			mazeLine += " "+str(scaledMaze[x][y])
+			
+		print(mazeLine)
+		mazeLine = ""
+
+	return scaledMaze
 
 
 func debug(msg : String = "") -> void:

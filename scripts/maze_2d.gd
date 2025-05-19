@@ -154,9 +154,15 @@ func _on_button_2_pressed() -> void:
 	tlm.clear()
 
 	#ISSUE: nothing displayed !
+	var color = 2
 	for x in range(0, blmaze.size()):
 		for y in range(0, blmaze[0].size()):
-			tlm.set_cell(Vector2i(x,y), 1, Vector2i(blmaze[x][y], 0)) 
+			if blmaze[x][y] == 1:
+				color = 2
+			else:
+				color = 0
+			tlm.set_cell(Vector2i(x,y), 0, Vector2i(color, 0))
+	$MarginContainer/VBoxContainer/SubViewportContainer.tml_updated()
 
 
 func _on_button_3_pressed() -> void:

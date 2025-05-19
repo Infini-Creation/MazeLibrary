@@ -1,21 +1,10 @@
-[gd_scene load_steps=5 format=4 uid="uid://df6b7wkb3j4as"]
+[gd_scene load_steps=3 format=3 uid="uid://df6b7wkb3j4as"]
 
-[ext_resource type="Script" uid="uid://dv8grno0qmrd8" path="res://scripts/maze_2d.gd" id="1_bsy2n"]
-[ext_resource type="Texture2D" uid="uid://dk118sc172yme" path="res://arts/cells-1.png" id="2_bpfv2"]
+[ext_resource type="Script" uid="uid://dv8grno0qmrd8" path="res://scripts/maze_2d.gd" id="1_76rw7"]
+[ext_resource type="PackedScene" uid="uid://yhwurjcsf343" path="res://scenes/maze_tml.tscn" id="2_76rw7"]
 
-[sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_4wmwi"]
-texture = ExtResource("2_bpfv2")
-use_texture_padding = false
-0:0/0 = 0
-1:0/0 = 0
-0:1/0 = 0
-1:1/0 = 0
-
-[sub_resource type="TileSet" id="TileSet_bsy2n"]
-sources/1 = SubResource("TileSetAtlasSource_4wmwi")
-
-[node name="Maze2D" type="Node2D"]
-script = ExtResource("1_bsy2n")
+[node name="Maze2D-Test" type="Node2D"]
+script = ExtResource("1_76rw7")
 
 [node name="MarginContainer" type="MarginContainer" parent="."]
 offset_right = 200.0
@@ -92,6 +81,10 @@ text = "Stop"
 [node name="HBoxContainer2" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
 layout_mode = 2
 
+[node name="Label" type="Label" parent="MarginContainer/VBoxContainer/HBoxContainer2"]
+layout_mode = 2
+text = "Debug: "
+
 [node name="wall1" type="Button" parent="MarginContainer/VBoxContainer/HBoxContainer2"]
 layout_mode = 2
 text = "Wall North"
@@ -112,22 +105,8 @@ text = "Wall West"
 layout_mode = 2
 text = "All Walls"
 
-[node name="SubViewportContainer" type="SubViewportContainer" parent="MarginContainer/VBoxContainer"]
-visible = false
+[node name="SubViewportContainer" parent="MarginContainer/VBoxContainer" instance=ExtResource("2_76rw7")]
 layout_mode = 2
-
-[node name="SubViewport" type="SubViewport" parent="MarginContainer/VBoxContainer/SubViewportContainer"]
-disable_3d = true
-handle_input_locally = false
-gui_disable_input = true
-gui_embed_subwindows = true
-size = Vector2i(1024, 512)
-render_target_update_mode = 0
-
-[node name="TileMapLayer" type="TileMapLayer" parent="MarginContainer/VBoxContainer/SubViewportContainer/SubViewport"]
-texture_filter = 1
-tile_map_data = PackedByteArray("AAAEAAIAAQAAAAAAAAAFAAIAAQAAAAAAAAAGAAIAAQAAAAAAAAAHAAIAAQAAAAAAAAAHAAMAAQABAAAAAAAGAAMAAQAAAAAAAAAFAAMAAQABAAAAAAAEAAMAAQAAAAAAAAAEAAQAAQAAAAEAAAAFAAQAAQAAAAAAAAAGAAQAAQAAAAAAAAAHAAQAAQAAAAAAAAAJAAIAAQAAAAAAAAAKAAIAAQAAAAAAAAALAAIAAQAAAAAAAAALAAMAAQAAAAAAAAAKAAMAAQABAAAAAAAJAAMAAQABAAAAAAAJAAQAAQABAAAAAAAKAAQAAQABAAAAAAALAAQAAQAAAAAAAAAIAAUAAQABAAAAAAAIAAQAAQABAAAAAAAIAAMAAQABAAAAAAAIAAIAAQAAAAAAAAAJAAUAAQABAAAAAAAKAAUAAQABAAAAAAALAAUAAQABAAAAAAAHAAUAAQAAAAAAAAAGAAUAAQAAAAAAAAAEAAUAAQAAAAEAAAAJAAYAAQABAAAAAAAJAAcAAQAAAAEAAAAJAAgAAQAAAAEAAAAKAAgAAQABAAEAAAALAAgAAQAAAAAAAAALAAYAAQAAAAAAAAALAAcAAQAAAAAAAAAKAAYAAQABAAAAAAAKAAcAAQABAAAAAAAIAAYAAQABAAAAAAAIAAcAAQAAAAEAAAAIAAgAAQAAAAEAAAAHAAgAAQAAAAEAAAAGAAgAAQAAAAAAAAAEAAcAAQAAAAAAAAAEAAYAAQAAAAEAAAAGAAYAAQAAAAAAAAAHAAYAAQABAAAAAAAHAAcAAQAAAAEAAAAFAAgAAQAAAAAAAAAEAAgAAQAAAAAAAAAFAAUAAQAAAAAAAAAFAAYAAQAAAAAAAAAFAAcAAQAAAAAAAAAGAAcAAQAAAAAAAAAMAAUAAQABAAAAAAAIAAkAAQAAAAEAAAAJAAkAAQABAAAAAAAHAAkAAQAAAAEAAAAIAAoAAQAAAAEAAAAJAAoAAQAAAAEAAAAKAAsAAQAAAAEAAAA=")
-tile_set = SubResource("TileSet_bsy2n")
 
 [connection signal="pressed" from="MarginContainer/VBoxContainer/HBoxContainer/Button" to="." method="_on_button_pressed"]
 [connection signal="pressed" from="MarginContainer/VBoxContainer/HBoxContainer/Button2" to="." method="_on_button_2_pressed"]

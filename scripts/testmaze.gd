@@ -13,3 +13,7 @@ func _ready() -> void:
 	maze.GenerateTWMaze_GrowingTree()
 
 	maze.dumpMaze()
+	
+	var bmaze = maze.lineToBlock()
+	#print("BM="+str(bmaze))
+	var sbmaze = maze.scaleBlockMaze(bmaze, 3)

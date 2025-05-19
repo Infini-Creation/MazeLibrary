@@ -27,16 +27,19 @@ var vcidx : int = 0
 var currentWalkedCell : Vector2i
 var wallsToDisplay : int = 0
 
-var wallColors : Array[Color] = [Color.WHITE, Color.RED, Color.BLUE, Color.GREEN]
+var wallColors : Array[Color] = [Color.WHITE, Color.WHITE, Color.WHITE, Color.WHITE]
+var wallColorsDebug : Array[Color] = [Color.WHITE, Color.RED, Color.BLUE, Color.GREEN]
 
 
 func _ready() -> void:
 	maze = Maze.new()
-	maze.buildBazeMaze(8, 8)
+	maze.buildBazeMaze(5, 5)
+	maze.debugNoRandom = true
 	maze.GenerateTWMaze_GrowingTree(Maze.PickMethod.Newest)
 	#maze.maze=[[12, 9, 8], [10, 6, 3], [6, 5, 1]]
 	#maze.dumpMaze()
 	
+	maze.debugNoRandom = true
 	print("WALLS N="+str(WALLS.North)+"  S="+str(WALLS.South)+"  E="+str(WALLS.East)+"  W="+str(WALLS.West))
 	offset = Vector2i(64, 64)
 	
@@ -150,6 +153,7 @@ func _on_button_2_pressed() -> void:
 	$MarginContainer/VBoxContainer/SubViewportContainer.show()
 	tlm.clear()
 
+	#ISSUE: nothing displayed !
 	for x in range(0, blmaze.size()):
 		for y in range(0, blmaze[0].size()):
 			tlm.set_cell(Vector2i(x,y), 1, Vector2i(blmaze[x][y], 0)) 

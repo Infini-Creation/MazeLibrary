@@ -1,0 +1,62 @@
+[gd_scene load_steps=4 format=3 uid="uid://dgsm0kgoa5csh"]
+
+[ext_resource type="Script" uid="uid://cxncugxgc3nmn" path="res://scripts/interactive_maze.gd" id="1_0myyw"]
+[ext_resource type="PackedScene" uid="uid://5lr3hahvt3c7" path="res://scenes/SpeedSlider.tscn" id="2_j5bre"]
+[ext_resource type="PackedScene" uid="uid://yhwurjcsf343" path="res://scenes/maze_tml.tscn" id="3_i4awt"]
+
+[node name="InteractiveMaze" type="Node2D"]
+script = ExtResource("1_0myyw")
+width = 5
+height = 5
+
+[node name="VBoxContainer" type="VBoxContainer" parent="."]
+offset_right = 105.0
+offset_bottom = 31.0
+
+[node name="HBoxContainer" type="HBoxContainer" parent="VBoxContainer"]
+layout_mode = 2
+
+[node name="Start" type="Button" parent="VBoxContainer/HBoxContainer"]
+layout_mode = 2
+text = "Start"
+
+[node name="Pause" type="Button" parent="VBoxContainer/HBoxContainer"]
+layout_mode = 2
+text = "Pause"
+
+[node name="VSeparator" type="VSeparator" parent="VBoxContainer/HBoxContainer"]
+layout_mode = 2
+
+[node name="Control" parent="VBoxContainer/HBoxContainer/VSeparator" instance=ExtResource("2_j5bre")]
+visible = false
+layout_mode = 1
+
+[node name="CurrentCell" type="Label" parent="VBoxContainer/HBoxContainer"]
+layout_mode = 2
+text = "cell: (-1, -1)"
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_trim_flags = 0
+justification_flags = 0
+
+[node name="PrevCell" type="Label" parent="VBoxContainer/HBoxContainer"]
+layout_mode = 2
+text = "cell: (-1, -1)"
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_trim_flags = 0
+justification_flags = 0
+
+[node name="Cell" type="Label" parent="VBoxContainer/HBoxContainer"]
+layout_mode = 2
+text = "0"
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_trim_flags = 0
+justification_flags = 0
+
+[node name="SubViewportContainer" parent="VBoxContainer" instance=ExtResource("3_i4awt")]
+layout_mode = 2
+
+[connection signal="pressed" from="VBoxContainer/HBoxContainer/Start" to="." method="_on_start_pressed"]
+[connection signal="pressed" from="VBoxContainer/HBoxContainer/Pause" to="." method="_on_pause_pressed"]

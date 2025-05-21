@@ -88,10 +88,7 @@ func GenerateTWMaze_GrowingTree(pmethod : int = PickMethod.Newest) -> void:
 	
 	debug("cells="+str(cells))
 	
-	var loop_count : int = 0
-	
-	while (cells.size() > 0 and loop_count < 1000):
-		loop_count += 1
+	while (cells.size() > 0):
 		debug("loop start, cells="+str(cells.size()))
 		index = chooseIndex(cells.size(), pmethod)
 		cellPicked = cells[index] ##.pop_at()
@@ -135,7 +132,6 @@ func GenerateTWMaze_GrowingTree(pmethod : int = PickMethod.Newest) -> void:
 	
 	generated = true
 	print("visisted cells="+str(visited_cells))
-	debug("loopcount="+str(loop_count))
 	print("maze="+str(maze))
 
 
@@ -315,6 +311,8 @@ func dumpMaze() -> void:
 
  # could use bitmap class instead
 # ~block maze class on its own with blocksize as param
+# "binary" simple maze could be made with bitmap class
+# https://docs.godotengine.org/en/stable/classes/class_bitmap.html
 func lineToBlock() -> Array:
 	var blockMaze : Array = []
 	

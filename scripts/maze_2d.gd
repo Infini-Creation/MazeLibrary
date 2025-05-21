@@ -34,12 +34,11 @@ var wallColorsDebug : Array[Color] = [Color.WHITE, Color.RED, Color.BLUE, Color.
 func _ready() -> void:
 	maze = Maze.new()
 	maze.buildBazeMaze(5, 5)
-	maze.debugNoRandom = true
+	maze.debugNoRandom = false
 	maze.GenerateTWMaze_GrowingTree(Maze.PickMethod.Newest)
 	#maze.maze=[[12, 9, 8], [10, 6, 3], [6, 5, 1]]
 	#maze.dumpMaze()
 	
-	maze.debugNoRandom = true
 	print("WALLS N="+str(WALLS.North)+"  S="+str(WALLS.South)+"  E="+str(WALLS.East)+"  W="+str(WALLS.West))
 	offset = Vector2i(64, 64)
 	
@@ -125,9 +124,9 @@ func _on_button_pressed() -> void:
 	var height = int($MarginContainer/VBoxContainer/HBoxContainer/TextEdit2.text)
 	var pmet = $MarginContainer/VBoxContainer/HBoxContainer/OptionButton.selected
 	maze.debug("pickmet="+str(pmet))
-	if width <= 0 or width > 50:
+	if width <= 0 or width > 500:
 		width = 5
-	if height <= 0 or height > 50:
+	if height <= 0 or height > 500:
 		height = 5
 		
 	maze.buildBazeMaze(width, height)

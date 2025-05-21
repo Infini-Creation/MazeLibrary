@@ -21,6 +21,7 @@ disable_3d = true
 handle_input_locally = false
 gui_disable_input = true
 gui_embed_subwindows = true
+sdf_oversize = 0
 size = Vector2i(1024, 512)
 render_target_update_mode = 4
 
@@ -30,3 +31,11 @@ tile_map_data = PackedByteArray("AAABAAEAAAAAAAAAAAABAAIAAAAAAAAAAAABAAMAAAAAAAA
 tile_set = SubResource("TileSet_bsy2n")
 
 [node name="Camera2D" type="Camera2D" parent="SubViewport"]
+
+[node name="Label" type="Label" parent="."]
+layout_mode = 2
+theme_override_constants/outline_size = 6
+text = "                                                                                                                           Up/Down/Left/Right to move the camera
+                                                                                                               PageUP/PageDown to zoom out/in"
+horizontal_alignment = 1
+vertical_alignment = 1

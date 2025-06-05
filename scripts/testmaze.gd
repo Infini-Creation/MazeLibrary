@@ -8,12 +8,12 @@ var maze : Maze
 
 func _ready() -> void:
 	maze = Maze.new()
-	maze.buildBazeMaze(3, 3)
+	maze.buildBazeMaze(10, 10, Maze.PickMethod.Random, 888) #, 5, 3)
 
 	maze.GenerateTWMaze_GrowingTree()
 
 	maze.dumpMaze()
-	
+	print("1st="+str(maze.firstCell)+"  last="+str(maze.lastCell))
 	var bmaze = maze.lineToBlock()
 	#print("BM="+str(bmaze))
 	var sbmaze = maze.scaleBlockMaze(bmaze, 3)

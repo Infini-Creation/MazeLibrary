@@ -17,6 +17,8 @@ enum Direction  { North = 0x1, West = 0x2, South = 0x4, East = 0x8 }
 var maze : Array
 var generated : bool = false
 var error : bool = false
+var firstCell : Vector2i = Vector2i(-1, -1)
+var lastCell : Vector2i = Vector2i(-1, -1)
 
 var origin : Vector2i = Vector2i(-1, -1)
 var cyclePick : int = -1
@@ -46,8 +48,23 @@ var interactiveMazeData : Dictionary = {
 var debugNoRandom : bool = false
 
 
-func buildBazeMaze(_width : int, _height : int, _pickmethod : int = PickMethod.Newest) -> void:
+func buildBazeMaze(_width : int, _height : int, _pickmethod : int = PickMethod.Newest, rseed : int = -1, holes : int = -1, hole_radius : int = -1) -> void:
 	
+	var xr : int = -127
+	var yr : int = -127
+	var holex : int
+	var holey : int
+	var blockTiles : int
+	var randomSeed : int
+
+	if rseed == -1:
+		randomSeed = int(Time.get_unix_time_from_system ())
+	else:
+		randomSeed = rseed
+	seed(randomSeed)
+
+	OS.set_low_processor_usage_mode(true)	#tmp as ref
+
 	if _width > 0 and _height > 0:
 		width = _width
 		height = _height
@@ -59,6 +76,23 @@ func buildBazeMaze(_width : int, _height : int, _pickmethod : int = PickMethod.N
 			maze[idx].resize(_height)
 			maze[idx].fill(0)
 
+		if holes > 0 and _width > 3 and _height > 3:
+			for hcount in range (0, holes):
+				holex = randi_range(0, _width - 1)
+				holey = randi_range(0, _height - 1)
+				
+				maze[holex][holey] = 32
+				blockTiles = randi_range(3, min(10, _width, _height))
+				for btidx in range(0, blockTiles):
+					while holex + xr < 0 or holex + xr >= _width:
+						xr = randi_range(-hole_radius, hole_radius)
+					while holey + yr < 0 or holey + yr >= _height:
+						yr = randi_range(-hole_radius, hole_radius)
+					maze[holex + xr][holey + yr] = 32
+					
+					xr = -127
+					yr = -127
+			
 		debug("maze="+str(maze))
 	else:
 		print("Invalid width and/or height value(s) : w=["+str(width)+"] h=["+str(height)+"]")
@@ -80,6 +114,7 @@ func GenerateTWMaze_GrowingTree(pmethod : int = PickMethod.Newest) -> void:
 		origin = Vector2i(1, 1)
 
 	cells.append(origin)
+	firstCell = origin
 
 	visited_cells.clear()
 	visited_cells.append(origin)
@@ -111,6 +146,7 @@ func GenerateTWMaze_GrowingTree(pmethod : int = PickMethod.Newest) -> void:
 				debug("maze[nx,ny] val="+str(maze[position.x][position.y]))
 				if maze[position.x][position.y] == 0:
 					visited_cells.append(cellPicked)
+					lastCell = cellPicked
 					debug("maze["+str(cellPicked.x)+"]["+str(cellPicked.y)+"]="+str(maze[cellPicked.x][cellPicked.y])+"  dir="+str(dir))
 					maze[cellPicked.x][cellPicked.y] |= dir
 					debug("maze2["+str(cellPicked.x)+"]["+str(cellPicked.y)+"]="+str(maze[cellPicked.x][cellPicked.y]))
@@ -332,15 +368,21 @@ func lineToBlock() -> Array:
 		for hidx in range (0, height):
 			blockMaze[2 * widx + 1][2 * hidx + 1] = 0
 
-			if maze[widx][hidx] & Direction.East != 0:
-				blockMaze[2 * widx + 2][2 * hidx + 1] = 0
+			#process holes here !
+			if maze[widx][hidx] == 32:
+				blockMaze[2 * widx + 1][2 * hidx + 1] = 2
+				blockMaze[2 * widx + 2][2 * hidx + 1] = 2
+				blockMaze[2 * widx + 1][2 * hidx + 2] = 2
 			else:
-				blockMaze[2 * widx + 2][2 * hidx + 1] = 1
+				if maze[widx][hidx] & Direction.East != 0:
+					blockMaze[2 * widx + 2][2 * hidx + 1] = 0
+				else:
+					blockMaze[2 * widx + 2][2 * hidx + 1] = 1
 
-			if maze[widx][hidx] & Direction.South != 0:
-				blockMaze[2 * widx + 1][2 * hidx + 2] = 0
-			else:
-				blockMaze[2 * widx + 1][2 * hidx + 2] = 1
+				if maze[widx][hidx] & Direction.South != 0:
+					blockMaze[2 * widx + 1][2 * hidx + 2] = 0
+				else:
+					blockMaze[2 * widx + 1][2 * hidx + 2] = 1
 
 			blockMaze[2 * widx + 2][2 * hidx + 2] = 1
 

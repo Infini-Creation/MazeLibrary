@@ -41,9 +41,9 @@ func _process(delta: float) -> void:
 	#print("potzoom="+str(lerp(velzoom, Vector2.ZERO, pow(2, -64 * delta))))
 	if velzoom.x != 0:
 		if velzoom.x > 0:
-			camera.zoom *= 1.05
+			camera.zoom *= 1.02
 		else:
-			camera.zoom *= 0.95
+			camera.zoom *= 0.98
 	#tmptestzoom -= 0.001
 	#camera.zoom = Vector2(tmptestzoom, tmptestzoom)
 

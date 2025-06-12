@@ -9,6 +9,38 @@ Then, your code can call any available functions to create a maze according to y
 
 ## Example
 
+One of the most basic usage of the Maze Library is something like this:
+
+Create a new _scene_, add ascript to it which is:
+
+```
+var maze : Maze
+
+func _ready() -> void:
+	maze = Maze.new()
+	maze.buildBazeMaze(10, 10)
+
+	maze.GenerateTWMaze_GrowingTree()
+
+	maze.dumpMaze()
+```
+
+It will simply generate a new maze of 10 cells wide and 10 cells high using default picking method (see below) and print it on console.
+
+Maze data will looks like this:
+```
+ 12 10 2 12 10 10 10 10 10 6
+ 9 6 12 3 12 6 12 6 12 7
+ 12 7 9 10 3 5 5 9 3 5
+ 5 1 12 10 10 3 5 8 6 5
+ 9 14 11 2 12 6 9 6 9 7
+ 4 1 12 10 3 9 6 9 6 5
+ 5 12 3 4 12 6 5 12 3 1
+ 9 3 12 7 5 9 3 5 12 6
+ 12 10 3 1 5 8 10 11 3 5
+ 9 10 10 10 11 10 10 10 10 3
+
+```
 
 ## Various pick methods generate different kind of maze which can be usefull according to your needs:
 

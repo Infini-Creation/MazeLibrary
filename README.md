@@ -2,6 +2,14 @@
 Almost everything you would need to create mazes for your game.
 This is a **GDscript** version of the [*GrowingTree algorithm*](https://weblog.jamisbuck.org/2011/1/27/maze-generation-growing-tree-algorithm) by *Jamis Buck*
 
+## How to use it in your own project ?
+
+Just copy the _Maze.gd_ script from this project into your own, for instance in a dedicated directory for libraries or external codes.
+Then, your code can call any available functions to create a maze according to your game needs, see example below.
+
+## Example
+
+
 ## Various pick methods generate different kind of maze which can be usefull according to your needs:
 
 ### Newest

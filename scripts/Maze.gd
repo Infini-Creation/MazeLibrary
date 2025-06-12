@@ -9,6 +9,7 @@ class_name  Maze
 # not happen with base ruby algorithm
 # => to help = do animated rendering, maybe just use visited cells array
 
+const VERSION : int = 10000
 
 enum PickMethod { Newest, Oldest, Random, Cyclic, Kitt, Collapse }
 enum Direction  { North = 0x1, West = 0x2, South = 0x4, East = 0x8 }
@@ -167,7 +168,7 @@ func GenerateTWMaze_GrowingTree(pmethod : int = PickMethod.Newest) -> void:
 		debug("==while loop end==")
 	
 	generated = true
-	print("visisted cells="+str(visited_cells))
+	debug("visisted cells="+str(visited_cells))
 	print("maze="+str(maze))
 
 

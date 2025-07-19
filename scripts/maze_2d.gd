@@ -33,6 +33,8 @@ var wallColorsDebug : Array[Color] = [Color.WHITE, Color.RED, Color.BLUE, Color.
 
 func _ready() -> void:
 	maze = Maze.new()
+	maze.init()
+	#maze.debugEnabled = true
 	maze.buildBazeMaze(5, 5)
 	maze.debugNoRandom = false
 	maze.GenerateTWMaze_GrowingTree(Maze.PickMethod.Newest)
@@ -111,6 +113,7 @@ func _draw() -> void:
 					# ~draw_multiline with all line data
 	#debug: draw each sides independantly, then combine
 	# or switch buttons N/S/W/E/ALL
+	#add circle for 1st & last cell
 
 
 func draw_maze(_maze : Maze) -> void:
@@ -134,7 +137,8 @@ func _on_button_pressed() -> void:
 	$MarginContainer/VBoxContainer/SubViewportContainer.hide()
 	draw_maze(maze)
 	$MarginContainer/VBoxContainer/HBoxContainer/Button3.disabled = false
-
+	print("FC="+str(maze.firstCell)+"  LC="+str(maze.lastCell))
+	
 
 func _on_button_2_pressed() -> void:
 	print("Generate block type maze")

@@ -8,7 +8,8 @@ var maze : Maze
 
 func _ready() -> void:
 	maze = Maze.new()
-	maze.buildBazeMaze(10, 10, Maze.PickMethod.Random, 888) #, 5, 3)
+	maze.init(888)
+	maze.buildBazeMaze(10, 10, Maze.PickMethod.Random) #, 5, 3)
 
 	maze.GenerateTWMaze_GrowingTree()
 

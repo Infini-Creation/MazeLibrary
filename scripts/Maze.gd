@@ -46,16 +46,14 @@ var interactiveMazeData : Dictionary = {
 var debugNoRandom : bool = false
 
 func init(rseed : int = -1) -> void:
-	var randomSeed : int
 
 	if randGen == null:
 		randGen = RandomNumberGenerator.new()
-	
+
 	if rseed == -1:
-		randomSeed = int(Time.get_unix_time_from_system ())
+		randGen.seed = int(Time.get_unix_time_from_system ())
 	else:
-		randomSeed = rseed
-	randGen.seed = randomSeed
+		randGen.seed = rseed
 
 
 func buildBazeMaze(_width : int, _height : int, _pickmethod : int = PickMethod.Newest, holes : int = -1, hole_radius : int = -1) -> void:
@@ -103,6 +101,7 @@ func buildBazeMaze(_width : int, _height : int, _pickmethod : int = PickMethod.N
 		error = true
 
 
+#BAD always set pmet to newest ??
 func GenerateTWMaze_GrowingTree(pmethod : int = PickMethod.Newest) -> void:
 	var cells : Array[Vector2i] = []
 
@@ -111,6 +110,8 @@ func GenerateTWMaze_GrowingTree(pmethod : int = PickMethod.Newest) -> void:
 	var direction : Array
 	var move : Vector2i
 	var position : Vector2i
+
+	debug("GT: pmet="+str(pmethod))
 
 	if debugNoRandom == false:
 		origin = Vector2i(randGen.randi_range(0, width-1), randGen.randi_range(0, height-1))
@@ -445,6 +446,109 @@ func scaleBlockMaze(blockMaze : Array, _scale : int = 1) -> Array:
 		mazeLine = ""
 
 	return scaledMaze
+
+
+func pick_a_free_cell_in_blockmaze(blockMaze: Array) -> Vector2i:
+	var cell : Vector2i = Vector2i(-1, -1)
+	var x : int
+	var y : int
+
+	while cell == Vector2i(-1, -1):
+		x = randGen.randi_range(0, blockMaze.size() - 1)
+		y = randGen.randi_range(0, blockMaze[0].size() - 1)
+		if blockMaze[x][y] == 0:
+			cell.x = x
+			cell.y = y
+	return cell
+
+
+func prepare_longest_path(blockmaze: Array, root : GNode, first_cell : Vector2i = Vector2i(-1, -1)) -> void:
+	if first_cell == Vector2i(-1, -1):
+		return
+	if blockmaze == null:
+		return
+
+	if root == null:
+		debug("plp: root is null")
+		root = GNode.new()
+		root.cell = Vector2i(-1, -1)
+
+	if root.cell == Vector2i(-1, -1):
+		debug("plp: root is empty")
+		root.cell = first_cell
+		root.length = 1
+	else:
+		debug("plp: root="+str(root.cell))
+
+	var parent : GNode = root.get_parent()
+	debug("plp: root="+str(root)+" rcell="+str(root.cell)+" par="+str(parent))
+
+	var keep_neighbor : bool = true
+	
+	debug("plp: check neighbor")
+	for neighbor in [Vector2i(-1, 0), Vector2i(1, 0), Vector2i(0, -1), Vector2i(0, 1)]:
+		debug("plp: check cell["+str(root.cell)+"]+["+str(neighbor)+"]")
+		keep_neighbor = true
+
+		if root.cell.x + neighbor.x >= 0 and root.cell.y + neighbor.y >= 0:
+			debug("plp: cell["+str(root.cell + neighbor)+"]="+str(blockmaze[root.cell.x + neighbor.x][root.cell.y + neighbor.y]))
+
+			if blockmaze[root.cell.x + neighbor.x][root.cell.y + neighbor.y] != 1:
+				debug("plp: cell["+str(root.cell + neighbor)+"] is valid")
+				
+				if parent != null:
+					debug("plp: parent exits")
+					if parent.cell != root.cell + neighbor:
+						debug("plp: parent is not the neighbor, ok")
+					else:
+						debug("plp: parent="+str(parent.cell)+" cell="+str(root.cell + neighbor))
+						debug("plp: parent is the neighbor, ignored")
+						keep_neighbor = false
+				else:
+					debug("plp: no parent")
+				
+				if keep_neighbor == true:
+					var child : GNode = GNode.new()
+					child.cell = Vector2i(root.cell.x + neighbor.x, root.cell.y + neighbor.y)
+					child.length = root.length + 1
+					root.add_child(child)
+					debug("plp: add child: "+str(child.cell)+" L="+str(child.length)+"  N="+str(child))
+					
+					debug("plp: rec call")
+					prepare_longest_path(blockmaze, child, root.cell + neighbor)
+
+		else:
+			debug("plp: index out of bounds")
+
+
+func get_longest_path(tree : GNode) -> Array[Vector2i]:
+	var bounds : Array[Vector2i] = [Vector2i(-1, -1), Vector2i(-1, -1)]
+	var maxdata = [0, Vector2i(-1, -1)]
+	
+	if tree != null:
+		depth_first_search(tree, maxdata)
+		bounds[0] = tree.cell
+		bounds[1] = maxdata[1]
+		print("glp: len="+str(maxdata[0])+" S="+str(bounds[0])+" E="+str(bounds[1]))
+	else:
+		print("glp: tree is null!")
+
+	return bounds
+
+
+func depth_first_search(tree : GNode, maxData : Array = [0, Vector2i(-1, 1)]) -> void:
+	#print("dfs: tree="+str(tree)+" ml="+str(maxData[0]))
+	if tree != null:
+		if tree.length > maxData[0] :
+			#var i = 0
+			#while i < 1000000:
+				#i += 1
+			maxData[0] = tree.length
+			maxData[1] = tree.cell
+			#print("DFS: found new max: L="+str(maxData[0])+"  c="+str(maxData[1]))
+
+		for node in tree.get_children():
+			depth_first_search(node, maxData)
 
 
 func debug(msg : String = "", newline : bool = true) -> void:

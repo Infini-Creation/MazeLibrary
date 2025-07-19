@@ -18,6 +18,7 @@ var maze : Maze
 
 func _ready() -> void:
 	maze = Maze.new()
+	maze.init()
 	maze.buildBazeMaze(10, 10)
 
 	maze.GenerateTWMaze_GrowingTree()
@@ -64,8 +65,12 @@ Create... quite like a mix of the two above
 
 Currently it only cycle from 0 to max and so on until there is no cell to pick, generate maze similar to the Random method
 
+### Kitt cycle
+
+Picked cell are taken from 0 to max then in the opposite way.
+Despite as original as it is, this picking method produce disappointing results.
+
 ### TODO
 
-* Cyclic _Kitt_ like method (from 0 to max then goes in opposite way)
 * Collapse - doesn't remember what I meant by this... need to dig from old code
 * other funny methods like Fibonnaci, geometric, odd only, even only, ...

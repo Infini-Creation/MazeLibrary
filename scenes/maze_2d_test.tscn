@@ -35,9 +35,9 @@ popup/item_2/id = 2
 popup/item_3/text = "Random"
 popup/item_3/id = 3
 popup/item_4/text = "Collapse"
-popup/item_4/id = 4
+popup/item_4/id = 5
 popup/item_5/text = "Kitt"
-popup/item_5/id = 5
+popup/item_5/id = 4
 
 [node name="TextEdit" type="TextEdit" parent="MarginContainer/VBoxContainer/HBoxContainer"]
 custom_minimum_size = Vector2(80, 0)

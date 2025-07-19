@@ -4,11 +4,6 @@ class_name  Maze
 # More information about GrowingTree algorithm used there :
 # https://weblog.jamisbuck.org/2011/1/27/maze-generation-growing-tree-algorithm
 
-# ISSUE: size> 22x22 (25x25 for instance) closed cells appears
-# start at 23x23, just a few cells
-# not happen with base ruby algorithm
-# => to help = do animated rendering, maybe just use visited cells array
-
 const VERSION : int = 10000
 
 enum PickMethod { Newest, Oldest, Random, Cyclic, Kitt, Collapse }
@@ -26,6 +21,7 @@ var cyclePick : int = -1
 var kittCycle : bool = true # true = increase, false = decrease
 var visited_cells : Array[Vector2i] = []
 
+var randGen : RandomNumberGenerator
 
 var interactiveMazeData : Dictionary = {
 	"started" : false,
@@ -44,27 +40,33 @@ var interactiveMazeData : Dictionary = {
 
 @export var width : int
 @export var height : int
+@export var scale : int = 1
 @export var pickMethod : int
 @export var debugEnabled : bool = false
 var debugNoRandom : bool = false
 
+func init(rseed : int = -1) -> void:
+	var randomSeed : int
 
-func buildBazeMaze(_width : int, _height : int, _pickmethod : int = PickMethod.Newest, rseed : int = -1, holes : int = -1, hole_radius : int = -1) -> void:
+	if randGen == null:
+		randGen = RandomNumberGenerator.new()
+	
+	if rseed == -1:
+		randomSeed = int(Time.get_unix_time_from_system ())
+	else:
+		randomSeed = rseed
+	randGen.seed = randomSeed
+
+
+func buildBazeMaze(_width : int, _height : int, _pickmethod : int = PickMethod.Newest, holes : int = -1, hole_radius : int = -1) -> void:
 	
 	var xr : int = -127
 	var yr : int = -127
 	var holex : int
 	var holey : int
 	var blockTiles : int
-	var randomSeed : int
-
-	if rseed == -1:
-		randomSeed = int(Time.get_unix_time_from_system ())
-	else:
-		randomSeed = rseed
-	seed(randomSeed)
-
-	OS.set_low_processor_usage_mode(true)	#tmp as ref
+	
+	seed(randGen.seed)
 
 	if _width > 0 and _height > 0:
 		width = _width
@@ -79,22 +81,23 @@ func buildBazeMaze(_width : int, _height : int, _pickmethod : int = PickMethod.N
 
 		if holes > 0 and _width > 3 and _height > 3:
 			for hcount in range (0, holes):
-				holex = randi_range(0, _width - 1)
-				holey = randi_range(0, _height - 1)
+				holex = randGen.randi_range(0, _width - 1)
+				holey = randGen.randi_range(0, _height - 1)
 				
 				maze[holex][holey] = 32
-				blockTiles = randi_range(3, min(10, _width, _height))
+				blockTiles = randGen.randi_range(3, min(10, _width, _height))
 				for btidx in range(0, blockTiles):
 					while holex + xr < 0 or holex + xr >= _width:
-						xr = randi_range(-hole_radius, hole_radius)
+						xr = randGen.randi_range(-hole_radius, hole_radius)
 					while holey + yr < 0 or holey + yr >= _height:
-						yr = randi_range(-hole_radius, hole_radius)
+						yr = randGen.randi_range(-hole_radius, hole_radius)
 					maze[holex + xr][holey + yr] = 32
 					
 					xr = -127
 					yr = -127
 			
 		debug("maze="+str(maze))
+		print("bbm: hash="+str(hash(maze)))
 	else:
 		print("Invalid width and/or height value(s) : w=["+str(width)+"] h=["+str(height)+"]")
 		error = true
@@ -110,7 +113,7 @@ func GenerateTWMaze_GrowingTree(pmethod : int = PickMethod.Newest) -> void:
 	var position : Vector2i
 
 	if debugNoRandom == false:
-		origin = Vector2i(randi_range(0, width-1), randi_range(0, height-1))
+		origin = Vector2i(randGen.randi_range(0, width-1), randGen.randi_range(0, height-1))
 	else:
 		origin = Vector2i(1, 1)
 
@@ -169,7 +172,8 @@ func GenerateTWMaze_GrowingTree(pmethod : int = PickMethod.Newest) -> void:
 	
 	generated = true
 	debug("visisted cells="+str(visited_cells))
-	print("maze="+str(maze))
+	debug("maze="+str(maze))
+	print("m: hash="+str(hash(maze)))
 
 
 func GenerateTWMaze_GrowingTree_interactive(step : bool = false, pmethod : int = PickMethod.Newest) -> bool:
@@ -178,7 +182,7 @@ func GenerateTWMaze_GrowingTree_interactive(step : bool = false, pmethod : int =
 	if interactiveMazeData["started"] == false:
 		debug("imaze: init")
 		if debugNoRandom == false:
-			origin = Vector2i(randi_range(0, width-1), randi_range(0, height-1))
+			origin = Vector2i(randGen.randi_range(0, width-1), randGen.randi_range(0, height-1))
 		else:
 			origin = Vector2i(1, 1)
 
@@ -260,7 +264,7 @@ func chooseIndex(maxIdx : int, pickmethod : int) -> int:
 		PickMethod.Oldest:
 			index = 0
 		PickMethod.Random:
-			index = randi_range(0, maxIdx - 1)
+			index = randGen.randi_range(0, maxIdx - 1)
 		PickMethod.Cyclic:
 			cyclePick = (cyclePick + 1) % maxIdx
 			index = cyclePick
@@ -346,6 +350,9 @@ func dumpMaze() -> void:
 		mazeLine = ""
 
 
+func mhash() -> int:
+	return hash(maze)
+
  # could use bitmap class instead
 # ~block maze class on its own with blocksize as param
 # "binary" simple maze could be made with bitmap class
@@ -386,6 +393,13 @@ func lineToBlock() -> Array:
 					blockMaze[2 * widx + 1][2 * hidx + 2] = 1
 
 			blockMaze[2 * widx + 2][2 * hidx + 2] = 1
+			
+			# could be on demand
+			#if Vector2i(widx, hidx) == firstCell:
+				#blockMaze[2 * widx + 1][2 * hidx + 1] = 2
+			#elif Vector2i(widx, hidx) == lastCell:
+				#blockMaze[2 * widx + 1][2 * hidx + 1] = 3
+
 
 	print("BlockMaze=")
 	var mazeLine : String = ""
@@ -400,7 +414,7 @@ func lineToBlock() -> Array:
 	return blockMaze
 
 
-func scaleBlockMaze(blockMaze : Array, scale : int = 1) -> Array:
+func scaleBlockMaze(blockMaze : Array, _scale : int = 1) -> Array:
 	var scaledMaze : Array = []
 	
 	if maze == null or blockMaze == null or blockMaze.size() <= 1 or blockMaze[0].size() <= 1:
@@ -408,31 +422,34 @@ func scaleBlockMaze(blockMaze : Array, scale : int = 1) -> Array:
 	else:
 		scaledMaze = []
 		#Byte[,] biggerMaze = new Byte[blockmaze.GetLength(0) * Scale, blockmaze.GetLength(1) * Scale];
-		scaledMaze.resize(blockMaze.size() * scale)
+		scaledMaze.resize(blockMaze.size() * _scale)
 		for idx in range (0, scaledMaze.size()):
 			scaledMaze[idx] = []
-			scaledMaze[idx].resize(blockMaze[0].size() * scale)
+			scaledMaze[idx].resize(blockMaze[0].size() * _scale)
 		
 		for x in range (0, blockMaze.size()):
 			for y in range (0, blockMaze[0].size()):
-				for sx in range(0, scale):
-					for sy in range(0, scale):
-						scaledMaze[x * scale + sx][y * scale + sy] = blockMaze[x][y]
+				for sx in range(0, _scale):
+					for sy in range(0, _scale):
+						scaledMaze[x * _scale + sx][y * _scale + sy] = blockMaze[x][y]
 			
 			
-	print("Scaled Maze=")
+	debug("Scaled Maze=")
 	var mazeLine : String = ""
 	for x in range(0, scaledMaze.size()):
-		printraw("BM["+str(x)+"]=")
+		debug("BM["+str(x)+"]=", false)
 		for y in range(0, scaledMaze[x].size()):
 			mazeLine += " "+str(scaledMaze[x][y])
 			
-		print(mazeLine)
+		debug(mazeLine)
 		mazeLine = ""
 
 	return scaledMaze
 
 
-func debug(msg : String = "") -> void:
+func debug(msg : String = "", newline : bool = true) -> void:
 	if debugEnabled == true:
-		print(msg)
+		if newline == true:
+			print(msg)
+		else:
+			printraw(msg)

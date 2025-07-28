@@ -6,7 +6,7 @@ class_name  Maze
 
 const VERSION : int = 10000
 
-enum PickMethod { Newest, Oldest, Random, Cyclic, Kitt, Collapse }
+enum PickMethod { Newest, Oldest, Random, Cyclic, Collapse, Kitt }
 enum Direction  { North = 0x1, West = 0x2, South = 0x4, East = 0x8 }
 #enum OppositeDirection  { South = 0x1, East = 0x2, North = 0x4, West = 0x8 }
 

@@ -6,7 +6,7 @@ class_name  Maze
 
 const VERSION : int = 10000
 
-enum PickMethod { Newest, Oldest, Random, Cyclic, Collapse, Kitt }
+enum PickMethod { Newest, Oldest, Random, Cyclic, Kitt, Collapse }
 enum Direction  { North = 0x1, West = 0x2, South = 0x4, East = 0x8 }
 #enum OppositeDirection  { South = 0x1, East = 0x2, North = 0x4, West = 0x8 }
 
@@ -37,7 +37,6 @@ var interactiveMazeData : Dictionary = {
 	"currentCell" : Vector2i.ZERO
 }
 
-
 @export var width : int
 @export var height : int
 @export var scale : int = 1
@@ -45,17 +44,22 @@ var interactiveMazeData : Dictionary = {
 @export var debugEnabled : bool = false
 var debugNoRandom : bool = false
 
+
 func init(rseed : int = -1) -> void:
+	var randomSeed : int
 
 	if randGen == null:
-		randGen = RandomNumberGenerator.new()
-
+		randGen = RandomNumberGenerator.new() # or init rangen inside origin/mm
+		# cause here => most likely different instance each time => diff values ?
+	
 	if rseed == -1:
-		randGen.seed = int(Time.get_unix_time_from_system ())
+		randomSeed = int(Time.get_unix_time_from_system ())
 	else:
-		randGen.seed = rseed
+		randomSeed = rseed
+	randGen.seed = randomSeed
 
-
+# ~give maze array hash value to make maze compare easy
+# ~pick method here irrelevant
 func buildBazeMaze(_width : int, _height : int, _pickmethod : int = PickMethod.Newest, holes : int = -1, hole_radius : int = -1) -> void:
 	
 	var xr : int = -127
@@ -101,7 +105,6 @@ func buildBazeMaze(_width : int, _height : int, _pickmethod : int = PickMethod.N
 		error = true
 
 
-#BAD always set pmet to newest ??
 func GenerateTWMaze_GrowingTree(pmethod : int = PickMethod.Newest) -> void:
 	var cells : Array[Vector2i] = []
 
@@ -110,8 +113,6 @@ func GenerateTWMaze_GrowingTree(pmethod : int = PickMethod.Newest) -> void:
 	var direction : Array
 	var move : Vector2i
 	var position : Vector2i
-
-	debug("GT: pmet="+str(pmethod))
 
 	if debugNoRandom == false:
 		origin = Vector2i(randGen.randi_range(0, width-1), randGen.randi_range(0, height-1))
@@ -293,7 +294,7 @@ func RandomizeDirection() -> Array:
 	var tmp : Array = Direction.values()
 	
 	if debugNoRandom == false:
-		tmp.shuffle()
+		tmp.shuffle()	#can use randGen ?
 	
 	debug("rd: temp dir array="+str(tmp))
 	return tmp
@@ -405,7 +406,7 @@ func lineToBlock() -> Array:
 	print("BlockMaze=")
 	var mazeLine : String = ""
 	for x in range(0, 2 * width + 1):
-		printraw("BM["+str(x)+"]=")
+		printraw("BM["+str(x)+"]=") ##, false)
 		for y in range(0, 2 * height + 1):
 			mazeLine += " "+str(blockMaze[x][y])
 			
@@ -462,11 +463,114 @@ func pick_a_free_cell_in_blockmaze(blockMaze: Array) -> Vector2i:
 	return cell
 
 
-func prepare_longest_path(blockmaze: Array, root : GNode, first_cell : Vector2i = Vector2i(-1, -1)) -> void:
+# ISSUE: diff lvl10 = stack overflow ??? 1024
+#	>= lvl 8   2047 (max) stack not enough !!!
+
+func prepare_longest_path_recursive(blockmaze: Array, root : GNode, first_cell : Vector2i = Vector2i(-1, -1)) -> void:
 	if first_cell == Vector2i(-1, -1):
 		return
 	if blockmaze == null:
 		return
+
+	if root == null:
+		debug("plpr: root is null")
+		root = GNode.new()
+		root.cell = Vector2i(-1, -1)
+
+	if root.cell == Vector2i(-1, -1):
+		debug("plpr: root is empty")
+		root.cell = first_cell
+		root.length = 1
+	else:
+		debug("plpr: root="+str(root.cell))
+
+	var parent : GNode = root.get_parent()
+	debug("plpr: root="+str(root)+" rcell="+str(root.cell)+" par="+str(parent))
+
+	var keep_neighbor : bool = true
+	
+	debug("plpr: check neighbor")
+	for neighbor in [Vector2i(-1, 0), Vector2i(1, 0), Vector2i(0, -1), Vector2i(0, 1)]:
+		debug("plpr: check cell["+str(root.cell)+"]+["+str(neighbor)+"]")
+		keep_neighbor = true
+
+		if root.cell.x + neighbor.x >= 0 and root.cell.y + neighbor.y >= 0:
+			debug("plpr: cell["+str(root.cell + neighbor)+"]="+str(blockmaze[root.cell.x + neighbor.x][root.cell.y + neighbor.y]))
+
+			if blockmaze[root.cell.x + neighbor.x][root.cell.y + neighbor.y] != 1:
+				debug("plpr: cell["+str(root.cell + neighbor)+"] is valid")
+				
+				if parent != null:
+					debug("plpr: parent exits")
+					if parent.cell != root.cell + neighbor:
+						debug("plpr: parent is not the neighbor, ok")
+					else:
+						debug("plpr: parent="+str(parent.cell)+" cell="+str(root.cell + neighbor))
+						debug("plpr: parent is the neighbor, ignored")
+						keep_neighbor = false
+				else:
+					debug("plpr: no parent")
+				
+				if keep_neighbor == true:
+					var child : GNode = GNode.new()
+					child.cell = Vector2i(root.cell.x + neighbor.x, root.cell.y + neighbor.y)
+					child.length = root.length + 1
+					child.name = str(child.cell)+" L="+str(child.length)
+					root.add_child(child)
+					debug("plpr: add child: "+str(child.cell)+" L="+str(child.length)+"  N="+str(child))
+					debug("plpr: cell added="+str(child.cell)+"  p="+str(root.cell))
+					
+					debug("plpr: rec call")
+					prepare_longest_path_recursive(blockmaze, child, root.cell + neighbor)
+
+		else:
+			debug("plpr: index out of bounds")
+
+
+func get_longest_path(tree : GNode) -> Array[Vector2i]:
+	var bounds : Array[Vector2i] = [Vector2i(-1, -1), Vector2i(-1, -1)]
+	var maxdata : Array
+	
+	if tree != null:
+		#depth_first_search_recursive(tree, maxdata)
+		maxdata = depth_first_search(tree)
+		bounds[0] = tree.cell
+		bounds[1] = maxdata[1]
+		print("glp: len="+str(maxdata[0])+" S="+str(bounds[0])+" E="+str(bounds[1]))
+	else:
+		print("glp: tree is null!")
+
+	GblSignal.free_orphan_nodes.emit()
+	#tree.queue_free() # => 1 node per game played remain
+	return bounds
+
+
+func depth_first_search_recursive(tree : GNode, maxData : Array = [0, Vector2i(-1, 1)]) -> void:
+	#print("dfs: tree="+str(tree)+" ml="+str(maxData[0]))
+	if tree != null:
+		if tree.length > maxData[0] :
+			#var i = 0
+			#while i < 1000000:
+				#i += 1
+			maxData[0] = tree.length
+			maxData[1] = tree.cell
+			#print("DFS: found new max: L="+str(maxData[0])+"  c="+str(maxData[1]))
+
+		for node in tree.get_children():
+			debug("DFSR: rec call")
+			depth_first_search_recursive(node, maxData)
+
+
+# maybe issue here: 306 cells max in a 18x17 maze => 610 nodes !
+func prepare_longest_path_bad(blockmaze: Array, root : GNode, first_cell : Vector2i = Vector2i(-1, -1)) -> void:
+	if first_cell == Vector2i(-1, -1):
+		return
+	if blockmaze == null:
+		return
+
+	var maxNodes : int = 1
+	var nodesToProcess : Array = []
+	var parent : GNode
 
 	if root == null:
 		debug("plp: root is null")
@@ -480,75 +584,182 @@ func prepare_longest_path(blockmaze: Array, root : GNode, first_cell : Vector2i 
 	else:
 		debug("plp: root="+str(root.cell))
 
-	var parent : GNode = root.get_parent()
-	debug("plp: root="+str(root)+" rcell="+str(root.cell)+" par="+str(parent))
+	nodesToProcess.append(root)
 
 	var keep_neighbor : bool = true
+	var child : GNode
+	var currentNode : GNode
+	var tmppar : Vector2i
+	#var maxiter : int = 20
+
+	while !nodesToProcess.is_empty(): # and maxiter > 0:
+		#maxiter -= 1
+		currentNode = nodesToProcess.pop_front()
+		##print("plp: node removed, list#="+str(nodesToProcess.size()))
+		#maxNodes -=1
+		parent = currentNode.get_parent()
+			#if this is null, parent = current_node ?
+			#	or 1st node processed
+
+		debug("plp: root="+str(currentNode)+" rcell="+str(currentNode.cell)+" par="+str(parent))
 	
-	debug("plp: check neighbor")
-	for neighbor in [Vector2i(-1, 0), Vector2i(1, 0), Vector2i(0, -1), Vector2i(0, 1)]:
-		debug("plp: check cell["+str(root.cell)+"]+["+str(neighbor)+"]")
-		keep_neighbor = true
+		for neighbor in [Vector2i(-1, 0), Vector2i(1, 0), Vector2i(0, -1), Vector2i(0, 1)]:
+			debug("plp: check cell["+str(currentNode.cell)+"]+["+str(neighbor)+"]")
+			keep_neighbor = true
 
-		if root.cell.x + neighbor.x >= 0 and root.cell.y + neighbor.y >= 0:
-			debug("plp: cell["+str(root.cell + neighbor)+"]="+str(blockmaze[root.cell.x + neighbor.x][root.cell.y + neighbor.y]))
+			if currentNode.cell.x + neighbor.x >= 0 and currentNode.cell.y + neighbor.y >= 0:
+				debug("plp: cell["+str(currentNode.cell + neighbor)+"]="+str(blockmaze[currentNode.cell.x + neighbor.x][currentNode.cell.y + neighbor.y]))
 
-			if blockmaze[root.cell.x + neighbor.x][root.cell.y + neighbor.y] != 1:
-				debug("plp: cell["+str(root.cell + neighbor)+"] is valid")
+				if blockmaze[currentNode.cell.x + neighbor.x][currentNode.cell.y + neighbor.y] != 1:
+					debug("plp: cell["+str(currentNode.cell + neighbor)+"] is valid")
 				
-				if parent != null:
-					debug("plp: parent exits")
-					if parent.cell != root.cell + neighbor:
-						debug("plp: parent is not the neighbor, ok")
+					if parent != null:
+						debug("plp: parent exits")
+						tmppar = parent.cell
+						if parent.cell != currentNode.cell + neighbor:
+							debug("plp: parent is not the neighbor, ok")
+						else:
+							debug("plp: parent="+str(parent.cell)+" cell="+str(currentNode.cell + neighbor))
+							debug("plp: parent is the neighbor, ignored")
+							keep_neighbor = false
 					else:
-						debug("plp: parent="+str(parent.cell)+" cell="+str(root.cell + neighbor))
-						debug("plp: parent is the neighbor, ignored")
-						keep_neighbor = false
-				else:
-					debug("plp: no parent")
-				
-				if keep_neighbor == true:
-					var child : GNode = GNode.new()
-					child.cell = Vector2i(root.cell.x + neighbor.x, root.cell.y + neighbor.y)
-					child.length = root.length + 1
-					root.add_child(child)
-					debug("plp: add child: "+str(child.cell)+" L="+str(child.length)+"  N="+str(child))
-					
-					debug("plp: rec call")
-					prepare_longest_path(blockmaze, child, root.cell + neighbor)
-
-		else:
-			debug("plp: index out of bounds")
-
-
-func get_longest_path(tree : GNode) -> Array[Vector2i]:
-	var bounds : Array[Vector2i] = [Vector2i(-1, -1), Vector2i(-1, -1)]
-	var maxdata = [0, Vector2i(-1, -1)]
+						debug("plp: no parent")
+						tmppar = Vector2i(-1, -1)
 	
-	if tree != null:
-		depth_first_search(tree, maxdata)
-		bounds[0] = tree.cell
-		bounds[1] = maxdata[1]
-		print("glp: len="+str(maxdata[0])+" S="+str(bounds[0])+" E="+str(bounds[1]))
-	else:
-		print("glp: tree is null!")
+					if keep_neighbor == true:
+						child = GNode.new()
+						child.cell = Vector2i(currentNode.cell.x + neighbor.x, currentNode.cell.y + neighbor.y)
+						child.length = currentNode.length + 1
+						currentNode.add_child(child)
+						debug("plp: add child: "+str(child.cell)+" L="+str(child.length)+"  N="+str(child))
+						#display cell added
+						#look for any duplicate
+						##print("plp: cell added="+str(child.cell)+"  cn="+str(currentNode.cell)+"  p="+str(tmppar))
+						debug("plp: cell added="+str(child.cell)+"  p="+str(currentNode.cell))
+						#here to convert 
+						nodesToProcess.append(child)
+						maxNodes += 1
+						
+						#debug("plp: rec call")
+						#prepare_longest_path_recursive(blockmaze, child, root.cell + neighbor)
 
-	return bounds
+			else:
+				debug("plp: index out of bounds")
+	print("plp maxNodes="+str(maxNodes))
 
 
-func depth_first_search(tree : GNode, maxData : Array = [0, Vector2i(-1, 1)]) -> void:
+func prepare_longest_path(blockmaze: Array, root : GNode) -> void:
+	if root == null:
+		return
+	if blockmaze == null:
+		return
+
+	var maxNodes : int = 1
+	var nodesToProcess : Array = []
+	var parent : GNode
+
+	nodesToProcess.append(root)
+
+	var keep_neighbor : bool = true
+	var child : GNode
+	var currentNode : GNode
+
+
+	while !nodesToProcess.is_empty():
+		currentNode = nodesToProcess.pop_front()
+		##print("plp: node removed, list#="+str(nodesToProcess.size()))
+
+		parent = currentNode.get_parent()
+
+		for neighbor in [Vector2i(-1, 0), Vector2i(1, 0), Vector2i(0, -1), Vector2i(0, 1)]:
+			keep_neighbor = true
+
+			if currentNode.cell.x + neighbor.x >= 0 and currentNode.cell.y + neighbor.y >= 0:
+				debug("plp: cell["+str(currentNode.cell + neighbor)+"]="+str(blockmaze[currentNode.cell.x + neighbor.x][currentNode.cell.y + neighbor.y]))
+
+				if blockmaze[currentNode.cell.x + neighbor.x][currentNode.cell.y + neighbor.y] != 1:
+					debug("plp: cell["+str(currentNode.cell + neighbor)+"] is valid")
+				
+					if parent != null:
+						debug("plp: parent exits")
+						if parent.cell != currentNode.cell + neighbor:
+							debug("plp: parent is not the neighbor, ok")
+						else:
+							debug("plp: parent="+str(parent.cell)+" cell="+str(currentNode.cell + neighbor))
+							debug("plp: parent is the neighbor, ignored")
+							keep_neighbor = false
+					else:
+						debug("plp: no parent")
+	
+					if keep_neighbor == true:
+						child = GNode.new()
+						child.cell = Vector2i(currentNode.cell.x + neighbor.x, currentNode.cell.y + neighbor.y)
+						child.length = currentNode.length + 1
+						child.name = str(child.cell)+" L="+str(child.length)
+						currentNode.add_child(child)
+						debug("plp: add child: "+str(child.cell)+" L="+str(child.length)+"  N="+str(child))
+						
+						##print("plp: cell added="+str(child.cell)+"  cn="+str(currentNode.cell)+"  p="+str(tmppar))
+						debug("plp: cell added="+str(child.cell)+"  p="+str(currentNode.cell))
+						nodesToProcess.push_back(child)
+						maxNodes += 1
+			else:
+				debug("plp: index out of bounds")
+	debug("plp maxNodes="+str(maxNodes))
+	#destroy nodes somewhere... start from root, dfs for instance
+
+
+
+func depth_first_search(anode : GNode) -> Array:
 	#print("dfs: tree="+str(tree)+" ml="+str(maxData[0]))
-	if tree != null:
-		if tree.length > maxData[0] :
-			#var i = 0
-			#while i < 1000000:
-				#i += 1
-			maxData[0] = tree.length
-			maxData[1] = tree.cell
-			#print("DFS: found new max: L="+str(maxData[0])+"  c="+str(maxData[1]))
+	var maxData : Array = [0, Vector2i(-1, 1)]
+	var nodesToProcess : Array[GNode] = []
+	var maxNodes : int = 1
 
-		for node in tree.get_children():
-			depth_first_search(node, maxData)
+	#var anode : GNode = null
+	#anode = GNode.new()
+	#anode.cell = Vector2i(-1, -1)
+	#anode.length = 0
+	nodesToProcess.append(anode)
+	debug("dfs: list #="+str(nodesToProcess.size()))
+	
+	while !nodesToProcess.is_empty():
+		anode = nodesToProcess.pop_back()
+		debug("dfs: list w1 #="+str(nodesToProcess.size()))
+		if anode.length > maxData[0] :
+			maxData[0] = anode.length
+			maxData[1] = anode.cell
+			debug("DFS: found new max: L="+str(maxData[0])+"  c="+str(maxData[1]))
+
+		for node in anode.get_children():
+			nodesToProcess.append(node)
+			maxNodes += 1
+	
+		debug("dfs: list w2 #="+str(nodesToProcess.size()))
+	print("DFS end: L="+str(maxData[0])+"  c="+str(maxData[1]))
+	print("dfs maxNodes="+str(maxNodes))
+	
+	#destroy nodes
+	#anode.queue_free() => doesn't help much
+	
+	return maxData
+
+
+# OR just expose randgen
+func generate_random_values(min_width : int = 5, max_width : int = 100, min_height : int = 5, max_height : int = 100, min_scale : int = 1, max_scale : int = 10) -> void:
+
+	width = 10 + randGen.randi_range(min_width, max_width)
+	height = 10 + randGen.randi_range(min_height, max_height)
+	scale = 1 + randGen.randi_range(min_scale, max_scale)
+	print("GRV: gw="+str(width)+" gh="+str(height)+" gs="+str(scale))
+
+
+func store_data() -> bool:
+	return false
+
+
+func fetch_data() -> bool:
+	return false
 
 
 func debug(msg : String = "", newline : bool = true) -> void:

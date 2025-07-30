@@ -540,8 +540,7 @@ func get_longest_path(tree : GNode) -> Array[Vector2i]:
 	else:
 		print("glp: tree is null!")
 
-	#GblSignal.free_orphan_nodes.emit()
-	tree.queue_free() # => 1 node per game played remain
+	tree.queue_free()
 	return bounds
 
 

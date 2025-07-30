@@ -8,9 +8,9 @@ var maze : Maze
 
 func _ready() -> void:
 	maze = Maze.new()
-	maze.debugEnabled = true
+	maze.debugEnabled = false
 	maze.init(888)
-	maze.buildBazeMaze(10, 10, Maze.PickMethod.Kitt) #, 5, 3)
+	maze.buildBazeMaze(15, 15, Maze.PickMethod.Kitt) #, 5, 3)
 
 	maze.GenerateTWMaze_GrowingTree()
 

@@ -34,7 +34,7 @@ var wallColorsDebug : Array[Color] = [Color.WHITE, Color.RED, Color.BLUE, Color.
 func _ready() -> void:
 	maze = Maze.new()
 	maze.init()
-	#maze.debugEnabled = true
+	maze.debugEnabled = false
 	maze.buildBazeMaze(5, 5)
 	maze.debugNoRandom = false
 	maze.GenerateTWMaze_GrowingTree(Maze.PickMethod.Newest)

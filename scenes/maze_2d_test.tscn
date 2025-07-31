@@ -7,6 +7,7 @@
 script = ExtResource("1_76rw7")
 
 [node name="MarginContainer" type="MarginContainer" parent="."]
+anchors_preset = -1
 offset_right = 200.0
 offset_bottom = 31.0
 

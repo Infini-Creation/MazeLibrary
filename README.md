@@ -4,7 +4,7 @@ This is a **GDscript** version of the [*GrowingTree algorithm*](https://weblog.j
 
 ## How to use it in your own project ?
 
-Just copy the _Maze.gd_ script from this project into your own, for instance in a dedicated directory for libraries or external codes.
+Just copy the _Maze.gd_ and _gnode.gd_ scripts from this project into your own, for instance in a dedicated directory for libraries or external codes.
 Then, your code can call any available functions to create a maze according to your game needs, see example below.
 
 ## Example
@@ -42,6 +42,15 @@ Maze data will looks like this:
  9 10 10 10 11 10 10 10 10 3
 
 ```
+
+Each number stand for a passage through walls in a given direction in a _bitmask_ fashion:
+
+> North = 1 
+> West = 2 
+> South = 4 
+> East = 8 
+
+For instance, the top left cell above, which have a value of 12, means it has open way to _South_ & _East_ (8 + 4 = 12).
 
 ## Various pick methods generate different kind of maze which can be usefull according to your needs:
 
